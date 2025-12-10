@@ -13,8 +13,8 @@ require (
 	github.com/onsi/ginkgo/v2 v2.27.3
 	github.com/onsi/gomega v1.38.3
 	google.golang.org/grpc v1.77.0
-	k8s.io/api v0.34.2
-	k8s.io/apimachinery v0.34.2
+	k8s.io/api v0.34.3
+	k8s.io/apimachinery v0.34.3
 	k8s.io/client-go v0.34.2
 	k8s.io/component-helpers v0.0.0-00010101000000-000000000000
 	k8s.io/cri-api v0.0.0-00010101000000-000000000000
