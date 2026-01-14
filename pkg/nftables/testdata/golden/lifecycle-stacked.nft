@@ -17,50 +17,58 @@ table inet multi_networkpolicy {
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv4_eth1_0 {
 		type ipv4_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 10.0.1.10 }
+		elements = { 10.0.1.10, 10.0.2.10 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv6_eth1_0 {
 		type ipv6_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 2001:db8:1::10 }
+		elements = { 2001:db8:1::10,
+			     2001:db8:2::10 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv4_eth2_0 {
 		type ipv4_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 10.0.2.10 }
+		elements = { 10.0.1.10, 10.0.2.10 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv6_eth2_0 {
 		type ipv6_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 2001:db8:2::10 }
+		elements = { 2001:db8:1::10,
+			     2001:db8:2::10 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv4_eth1_1 {
 		type ipv4_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 10.0.1.20, 10.0.1.21 }
+		elements = { 10.0.1.20, 10.0.1.21,
+			     10.0.2.20, 10.0.2.21 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv6_eth1_1 {
 		type ipv6_addr
 		comment "Addresses for test-ns/comprehensive"
 		elements = { 2001:db8:1::20,
-			     2001:db8:1::21 }
+			     2001:db8:1::21,
+			     2001:db8:2::20,
+			     2001:db8:2::21 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv4_eth2_1 {
 		type ipv4_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 10.0.2.20, 10.0.2.21 }
+		elements = { 10.0.1.20, 10.0.1.21,
+			     10.0.2.20, 10.0.2.21 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_ingress_ipv6_eth2_1 {
 		type ipv6_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 2001:db8:2::20,
+		elements = { 2001:db8:1::20,
+			     2001:db8:1::21,
+			     2001:db8:2::20,
 			     2001:db8:2::21 }
 	}
 
@@ -95,25 +103,27 @@ table inet multi_networkpolicy {
 	set snp-e03de052de4c995afa1e5ce221a635e8_egress_ipv4_eth1_0 {
 		type ipv4_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 10.0.1.21 }
+		elements = { 10.0.1.21, 10.0.2.21 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_egress_ipv6_eth1_0 {
 		type ipv6_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 2001:db8:1::21 }
+		elements = { 2001:db8:1::21,
+			     2001:db8:2::21 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_egress_ipv4_eth2_0 {
 		type ipv4_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 10.0.2.21 }
+		elements = { 10.0.1.21, 10.0.2.21 }
 	}
 
 	set snp-e03de052de4c995afa1e5ce221a635e8_egress_ipv6_eth2_0 {
 		type ipv6_addr
 		comment "Addresses for test-ns/comprehensive"
-		elements = { 2001:db8:2::21 }
+		elements = { 2001:db8:1::21,
+			     2001:db8:2::21 }
 	}
 
 	chain input {
