@@ -41,7 +41,7 @@ func (n *NFTables) enforcePolicy(ctx context.Context, pod *corev1.Pod, interface
 	// Find the interfaces on the pod that belong to the networks of the policy (Policy-for annotation)
 	matchedInterfaces := getMatchedInterfaces(interfaces, policy.Networks)
 	if len(matchedInterfaces) == 0 {
-		logger.Info("No matched interfaces found, skipping")
+		logger.Info("No matched interfaces found, skipping", "policyNetworks", policy.Networks, "interfaces", interfaces)
 		return nil
 	}
 
