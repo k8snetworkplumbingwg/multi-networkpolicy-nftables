@@ -11,6 +11,7 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/testutils"
 	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/funcr"
 	multiv1beta1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,10 +25,13 @@ import (
 	"github.com/k8snetworkplumbingwg/multi-network-policy-nftables/pkg/datastore"
 )
 
+var logger logr.Logger = funcr.New(func(prefix, args string) {
+	GinkgoWriter.Printf("%s %s\n", prefix, args)
+}, funcr.Options{Verbosity: 6})
+
 var _ = Describe("NFTables Simple Integration Tests", func() {
 	var (
 		ctx               context.Context
-		logger            logr.Logger
 		targetPod         *corev1.Pod
 		matchedInterfaces []Interface
 
@@ -44,7 +48,6 @@ var _ = Describe("NFTables Simple Integration Tests", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		logger = logr.Discard()
 
 		// Create target pod (the one policies apply to)
 		targetPod = &corev1.Pod{
@@ -279,6 +282,182 @@ var _ = Describe("NFTables Simple Integration Tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
+
+var _ = Describe("Multiple NetworkAttachmentDefinitions Integration Tests", func() {
+	/*
+		                   ┌─────────────┐        ┌─────────────┐
+		                   │  << NAD >>  │        │  << NAD >>  │
+		                   │ RedNetwork  │        │ BlueNetwork │
+		                   │             │        │             │
+		                   └─────────────┘        └─────────────┘
+
+		┌────────────┐     ┌─────────────┐        ┌─────────────┐     ┌────────────┐
+		│            │     │             │        │             │     │            │
+		│ red-pod-a  ├──┐  │  << MNP >>  │        │  << MNP >>  │  ┌──┼ blue-pod-a │
+		│            │  │  │  RedPolicy  │        │ BluePolicy  │  │  │            │
+		└────────────┘  │  │             │        │             │  │  └────────────┘
+		                │  └─────────────┘        └─────────────┘  │
+		┌────────────┐  │                                          │  ┌────────────┐
+		│            │  │ 10.0.1.0/24                  10.0.2.0/24 │  │            │
+		│ red-pod-b  ├──┴───────────┐                   ┌──────────┴──┤ blue-pod-b │
+		│            │        ┌──┬──┴─────┬──────┬──────┴──┬──┐       │            │
+		└────────────┘        │  │ ethred │      │ ethblue │  │       └────────────┘
+		                      │  └────────┘      └─────────┘  │
+		                      │                               │
+		                      │          TargetPod            │
+		                      │                               │
+		                      └───────────────────────────────┘
+	*/
+	var (
+		targetPod      *corev1.Pod
+		redPodA        *corev1.Pod
+		redPodB        *corev1.Pod
+		bluePodA       *corev1.Pod
+		bluePodB       *corev1.Pod
+		redInterfaces  []Interface
+		blueInterfaces []Interface
+	)
+
+	BeforeEach(func() {
+		// Create target pod (the one policies apply to)
+		targetPod = &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "target-pod",
+				Namespace: "test-ns",
+				Labels:    map[string]string{"app": "target-pod"},
+				Annotations: map[string]string{
+					"k8s.v1.cni.cncf.io/networks":       "red-net,blue-net",
+					"k8s.v1.cni.cncf.io/network-status": `[{"name":"test-ns/red-net","interface":"ethred","ips":["10.0.1.1","2001:db8:1::1"],"dns":{}},{"name":"test-ns/blue-net","interface":"ethblue","ips":["10.0.2.1","2001:db8:2::1"],"dns":{}}]`,
+				},
+			},
+			Spec:   corev1.PodSpec{HostNetwork: false},
+			Status: corev1.PodStatus{Phase: corev1.PodRunning},
+		}
+
+		redInterfaces = []Interface{{Name: "ethred", Network: "test-ns/red-net", IPs: []string{"10.0.1.1", "2001:db8:1::1"}}}
+		blueInterfaces = []Interface{{Name: "ethblue", Network: "test-ns/blue-net", IPs: []string{"10.0.2.1", "2001:db8:2::1"}}}
+
+		// Create test pods for comprehensive test
+		redPodA = createPodSingleInterface("red-pod-a", "test-ns/red-net",
+			map[string]string{"app": "red-pod-a"},
+			"10.0.1.10", "2001:db8:1::10")
+
+		redPodB = createPodSingleInterface("red-pod-b", "test-ns/red-net",
+			map[string]string{"app": "red-pod-b"},
+			"10.0.1.11", "2001:db8:1::11")
+
+		bluePodA = createPodSingleInterface("blue-pod-a", "test-ns/blue-net",
+			map[string]string{"app": "blue-pod-a"},
+			"10.0.2.10", "2001:db8:2::10")
+
+		bluePodB = createPodSingleInterface("blue-pod-b", "test-ns/blue-net",
+			map[string]string{"app": "blue-pod-b"},
+			"10.0.2.11", "2001:db8:2::11")
+	})
+
+	It("should handle policies on different networks", func(ctx context.Context) {
+		defer GinkgoRecover()
+
+		netNS, err := testutils.NewNS()
+		Expect(err).NotTo(HaveOccurred())
+		defer netNS.Close()
+
+		err = netNS.Do(func(_ ns.NetNS) error {
+			runtime.LockOSThread()
+			defer runtime.UnlockOSThread()
+
+			nftablesWithPods := &NFTables{
+				Client: createFakeClient([]*corev1.Pod{targetPod, redPodA, redPodB, bluePodA, bluePodB}),
+			}
+
+			redPolicy := &datastore.Policy{
+				Name:      "red-policy",
+				Namespace: "test-ns",
+				Networks:  []string{"test-ns/red-net"},
+				Spec: multiv1beta1.MultiNetworkPolicySpec{
+					PodSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "target-pod"},
+					},
+					PolicyTypes: []multiv1beta1.MultiPolicyType{
+						multiv1beta1.PolicyTypeIngress,
+						multiv1beta1.PolicyTypeEgress,
+					},
+					Ingress: []multiv1beta1.MultiNetworkPolicyIngressRule{{
+						From: []multiv1beta1.MultiNetworkPolicyPeer{createPolicyPeer(map[string]string{"app": "red-pod-a"})},
+					}},
+					Egress: []multiv1beta1.MultiNetworkPolicyEgressRule{{
+						To: []multiv1beta1.MultiNetworkPolicyPeer{createPolicyPeer(map[string]string{"app": "red-pod-b"})},
+					}},
+				},
+			}
+
+			bluePolicy := &datastore.Policy{
+				Name:      "blue-policy",
+				Namespace: "test-ns",
+				Networks:  []string{"test-ns/blue-net"},
+				Spec: multiv1beta1.MultiNetworkPolicySpec{
+					PodSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "target-pod"},
+					},
+					PolicyTypes: []multiv1beta1.MultiPolicyType{
+						multiv1beta1.PolicyTypeIngress,
+						multiv1beta1.PolicyTypeEgress,
+					},
+					Ingress: []multiv1beta1.MultiNetworkPolicyIngressRule{{
+						From: []multiv1beta1.MultiNetworkPolicyPeer{createPolicyPeer(map[string]string{"app": "blue-pod-a"})},
+					}},
+					Egress: []multiv1beta1.MultiNetworkPolicyEgressRule{{
+						To: []multiv1beta1.MultiNetworkPolicyPeer{createPolicyPeer(map[string]string{"app": "blue-pod-b"})},
+					}},
+				},
+			}
+
+			err = nftablesWithPods.enforcePolicy(ctx, targetPod, redInterfaces, redPolicy, logger)
+			if err != nil {
+				return err
+			}
+
+			err = nftablesWithPods.enforcePolicy(ctx, targetPod, blueInterfaces, bluePolicy, logger)
+			if err != nil {
+				return err
+			}
+
+			err = verifyNFTablesGoldenFile("multiple-networks-policy.nft")
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+func createPolicyPeer(matchLabels map[string]string) multiv1beta1.MultiNetworkPolicyPeer {
+	return multiv1beta1.MultiNetworkPolicyPeer{
+		PodSelector: &metav1.LabelSelector{
+			MatchLabels: matchLabels,
+		},
+	}
+}
+
+func createPodSingleInterface(name, network string, labels map[string]string, ipv4Net, ipv6Net string) *corev1.Pod {
+	networkStatus := fmt.Sprintf(`[{"name":"%s","interface":"eth1","ips":["%s","%s"],"dns":{}}]`, network, ipv4Net, ipv6Net)
+
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "test-ns",
+			Labels:    labels,
+			Annotations: map[string]string{
+				"k8s.v1.cni.cncf.io/networks":       network,
+				"k8s.v1.cni.cncf.io/network-status": networkStatus,
+			},
+		},
+		Spec:   corev1.PodSpec{HostNetwork: false},
+		Status: corev1.PodStatus{Phase: corev1.PodRunning},
+	}
+}
 
 // Helper function to create a dual-stack pod
 func createDualStackPod(name, namespace string, labels map[string]string, ipv4Net1, ipv4Net2, ipv6Net1, ipv6Net2 string) *corev1.Pod {
