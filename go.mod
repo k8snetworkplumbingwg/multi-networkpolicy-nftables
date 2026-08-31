@@ -9,7 +9,7 @@ require (
 	github.com/k8snetworkplumbingwg/multi-networkpolicy v1.0.1
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.40.0
+	github.com/onsi/gomega v1.43.0
 	google.golang.org/grpc v1.83.1
 	k8s.io/api v0.36.4
 	k8s.io/apimachinery v0.36.4
