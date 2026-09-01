@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.9.0
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/k8snetworkplumbingwg/multi-networkpolicy v1.0.1
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/onsi/ginkgo/v2 v2.32.1
