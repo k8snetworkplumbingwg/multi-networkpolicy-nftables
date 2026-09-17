@@ -38,13 +38,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: multi-networkpolicy-nftables
-    namespace: default
+    namespace: kube-system
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: multi-networkpolicy-nftables
-  namespace: default
+  namespace: kube-system
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -56,7 +56,7 @@ metadata:
     app: multi-networkpolicy
 data:
   custom-v4-rules.txt: |
-    # Custom IPv4 rules for e2e testing
+    # Custom IPv4 rules
     # Allow traffic on port 9999 for testing custom rules
     tcp dport 9999 accept
     # Allow traffic from specific IP range
@@ -72,7 +72,7 @@ metadata:
     app: multi-networkpolicy
 data:
   custom-v6-rules.txt: |
-    # Custom IPv6 rules for e2e testing
+    # Custom IPv6 rules
     # Allow traffic on port 9999 for testing custom rules
     tcp dport 9999 accept
     # Allow traffic from specific IPv6 range
@@ -82,7 +82,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: multi-networkpolicy-nftables
-  namespace: default
+  namespace: kube-system
   labels:
     app: multi-networkpolicy-nftables
 spec:
@@ -100,7 +100,7 @@ spec:
       serviceAccountName: multi-networkpolicy-nftables
       containers:
         - name: multi-networkpolicy-nftables
-          image: localhost:5000/multus-networkpolicy-nftables:e2e
+          image: ghcr.io/k8snetworkplumbingwg/multi-networkpolicy-nftables:latest
           imagePullPolicy: Always
           command:
             - /multi-networkpolicy-nftables
@@ -109,16 +109,14 @@ spec:
             - "--container-runtime-endpoint=/run/crio/crio.sock"
             - "--network-plugins=macvlan,ipvlan"
             - "--host-prefix=/host"
-            # accept all icmp/icmpv6 types for e2e testing
+            # accept all icmp/icmpv6 types
             - "--accept-icmp"
             - "--accept-icmpv6"
-            # custom rules for e2e testing
+            # custom rules
             - "--custom-v4-ingress-rule-file=/etc/multi-networkpolicy/rules/custom-v4-rules.txt"
             - "--custom-v4-egress-rule-file=/etc/multi-networkpolicy/rules/custom-v4-rules.txt"
             - "--custom-v6-ingress-rule-file=/etc/multi-networkpolicy/rules/custom-v6-rules.txt"
             - "--custom-v6-egress-rule-file=/etc/multi-networkpolicy/rules/custom-v6-rules.txt"
-            # enable debug logging for e2e
-            - "--zap-log-level=2"
           resources:
             requests:
               cpu: "100m"
