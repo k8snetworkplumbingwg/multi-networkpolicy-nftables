@@ -56,11 +56,7 @@ metadata:
     app: multi-networkpolicy
 data:
   custom-v4-rules.txt: |
-    # Custom IPv4 rules
-    # Allow traffic on port 9999 for testing custom rules
-    tcp dport 9999 accept
-    # Allow traffic from specific IP range
-    ip saddr 192.168.100.0/24 accept
+    # Add custom IPv4 rules here if needed
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -72,11 +68,7 @@ metadata:
     app: multi-networkpolicy
 data:
   custom-v6-rules.txt: |
-    # Custom IPv6 rules
-    # Allow traffic on port 9999 for testing custom rules
-    tcp dport 9999 accept
-    # Allow traffic from specific IPv6 range
-    ip6 saddr 2001:db8:100::/64 accept
+    # Add custom IPv6 rules here if needed
 ---
 apiVersion: apps/v1
 kind: DaemonSet
