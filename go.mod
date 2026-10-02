@@ -3,7 +3,7 @@ module github.com/k8snetworkplumbingwg/multi-network-policy-nftables
 go 1.26.5
 
 require (
-	github.com/containernetworking/cni v1.3.0
+	github.com/containernetworking/cni v1.3.1
 	github.com/containernetworking/plugins v1.9.0
 	github.com/go-logr/logr v1.4.4
 	github.com/k8snetworkplumbingwg/multi-networkpolicy v1.0.1
@@ -66,6 +66,8 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
+	go.opentelemetry.io/otel v1.44.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
