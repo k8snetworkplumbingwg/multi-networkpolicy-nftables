@@ -16,7 +16,7 @@ require (
 	k8s.io/client-go v0.37.1
 	k8s.io/component-helpers v0.0.0-00010101000000-000000000000
 	k8s.io/cri-api v0.0.0-00010101000000-000000000000
-	sigs.k8s.io/controller-runtime v0.25.1
+	sigs.k8s.io/controller-runtime v0.25.2
 	sigs.k8s.io/knftables v0.0.22
 )
 
