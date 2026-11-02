@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.44.0
 	google.golang.org/grpc v1.84.0
 	k8s.io/api v0.37.1
-	k8s.io/apimachinery v0.37.1
+	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.1
 	k8s.io/component-helpers v0.0.0-00010101000000-000000000000
 	k8s.io/cri-api v0.0.0-00010101000000-000000000000
